@@ -1,7 +1,7 @@
 # Notes:
 * Team members: Trevor Weger,Surya Suresh
 * Project Goal: Evaluate performance of Spatial memory based prefetcher.
-* Discrption  : This is the code to implement Spatial Memory Streaming in Scarab. Below is the read me from orginal Scarab Git used.
+* Discrption  : This is an updated version of Scarab with Spatial Memory Streaming implemented. Below is the read me from orginal Scarab Git used.
 * https://github.com/hpsresearchgroup/scarab
 
 
