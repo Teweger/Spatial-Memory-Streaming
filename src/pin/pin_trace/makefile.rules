@@ -1,0 +1,114 @@
+##############################################################
+#
+# This file includes all the test targets as well as all the
+# non-default build rules and test recipes.
+#
+##############################################################
+
+
+##############################################################
+#
+# Test targets
+#
+##############################################################
+
+###### Place all generic definitions here ######
+
+# This defines tests which run tools of the same name.  This is simply for convenience to avoid
+# defining the test name twice (once in TOOL_ROOTS and again in TEST_ROOTS).
+# Tests defined here should not be defined in TOOL_ROOTS and TEST_ROOTS.
+TEST_TOOL_ROOTS := gen_trace
+
+# This defines the tests to be run that were not already defined in TEST_TOOL_ROOTS.
+TEST_ROOTS :=
+
+# This defines the tools which will be run during the the tests, and were not already defined in
+# TEST_TOOL_ROOTS.
+TOOL_ROOTS :=
+
+# This defines the static analysis tools which will be run during the the tests. They should not
+# be defined in TEST_TOOL_ROOTS. If a test with the same name exists, it should be defined in
+# TEST_ROOTS.
+# Note: Static analysis tools are in fact executables linked with the Pin Static Analysis Library.
+# This library provides a subset of the Pin APIs which allows the tool to perform static analysis
+# of an application or dll. Pin itself is not used when this tool runs.
+SA_TOOL_ROOTS :=
+
+# This defines all the applications that will be run during the tests.
+APP_ROOTS :=
+
+# This defines any additional object files that need to be compiled.
+OBJECT_ROOTS :=
+
+# This defines any additional dlls (shared objects), other than the pintools, that need to be compiled.
+DLL_ROOTS :=
+
+# This defines any static libraries (archives), that need to be built.
+LIB_ROOTS :=
+
+###### Define the sanity subset ######
+
+# This defines the list of tests that should run in sanity. It should include all the tests listed in
+# TEST_TOOL_ROOTS and TEST_ROOTS excluding only unstable tests.
+SANITY_SUBSET := $(TEST_TOOL_ROOTS) $(TEST_ROOTS)
+
+COMMON_LIB_PATH  := ../pin_lib
+COMMON_LIB_CFILES   := $(wildcard $(COMMON_LIB_PATH)/*.cc)
+COMMON_LIB_OBJFILES := $(patsubst $(COMMON_LIB_PATH)/%.cc,$(OBJDIR)%.o,$(COMMON_LIB_CFILES))
+
+SCARAB_OBJFILES := $(OBJDIR)isa.o
+
+PINPLAY_HOME=$(PIN_ROOT)/extras/pinplay/
+PINPLAY_INCLUDE_HOME=$(PINPLAY_HOME)/include
+PINPLAY_LIB_HOME=$(PINPLAY_HOME)/lib/$(TARGET)
+EXT_LIB_HOME=$(PINPLAY_HOME)/lib-ext/$(TARGET)
+
+SCARAB_DIR ?= ../../
+PINPLAY_LIBS=$(PINPLAY_LIB_HOME)/libpinplay.a $(EXT_LIB_HOME)/libbz2.a $(EXT_LIB_HOME)/libzlib.a $(CONTROLLERLIB)
+TOOL_CXXFLAGS += -I$(PINPLAY_INCLUDE_HOME) -I$(SCARAB_DIR) -std=c++11
+TOOL_LDFLAGS += -std=c++11
+READ_TRACE_CFLAGS =  -O3 -I$(SCARAB_DIR)
+READ_TRACE_CXXFLAGS =  -std=c++14 -O3 -I$(SCARAB_DIR)
+
+
+##############################################################
+#
+# Build rules
+#
+##############################################################
+
+# This section contains the build rules for all binaries that have special build rules.
+# See makefile.default.rules for the default build rules.
+
+.PHONY: commonlibs gen_trace read_trace
+
+gen_trace: $(OBJDIR)gen_trace.so
+
+$(OBJDIR)%.o: $(COMMON_LIB_PATH)/%.cc
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $< -DPIN_COMPILE
+
+$(OBJDIR)%.o: %.cc
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $< -DPIN_COMPILE
+
+$(OBJDIR)isa.o: $(SCARAB_DIR)/isa/isa.c
+	$(CC) $(READ_TRACE_CFLAGS) $(COMP_OBJ)$@ $<
+
+commonlibs: $(COMMON_LIB_OBJFILES)
+
+# Build the tool as a dll (shared object).
+# overriding rule in makefile.default.rules
+$(OBJDIR)gen_trace$(PINTOOL_SUFFIX): $(OBJDIR)gen_trace$(OBJ_SUFFIX) $(SOURCE_OBJFILES) commonlibs $(PINPLAY_LIB_HOME)/libpinplay.a $(EXT_LIB_HOME)/libbz2.a $(EXT_LIB_HOME)/libzlib.a $(CONTROLLERLIB)
+	$(info invoking link)
+	$(LINKER) $(TOOL_LDFLAGS) $(LINK_EXE)$@ $< $(SOURCE_OBJFILES) $(COMMON_LIB_OBJFILES) $(TOOL_LPATHS) $(PINPLAY_LIBS) $(TOOL_LIBS)
+
+$(OBJDIR)gen_trace$(OBJ_SUFFIX):gen_trace.cc
+	$(info invoking compile)
+	$(CXX) $(TOOL_CXXFLAGS) $(COMP_OBJ)$@ $< -MD -DPIN_COMPILE
+
+read_trace: $(OBJDIR)read_trace
+
+$(OBJDIR)read_trace: read_trace.cc dir $(SCARAB_OBJFILES)
+	g++ read_trace.cc $(SCARAB_OBJFILES) $(READ_TRACE_CXXFLAGS) -o $@
+
+-include $(OBJDIR)gen_trace.d
+-include $(OBJDIR)read_trace.d
