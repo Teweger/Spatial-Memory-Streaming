@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpin_lib_for_scarab.a  CMakeFiles/pin_lib_for_scarab.dir/message_queue_interface_lib.cc.o CMakeFiles/pin_lib_for_scarab.dir/pin_scarab_common_lib.cc.o CMakeFiles/pin_lib_for_scarab.dir/uop_generator.c.o CMakeFiles/pin_lib_for_scarab.dir/x86_decoder.cc.o CMakeFiles/pin_lib_for_scarab.dir/x87_stack_delta.cc.o CMakeFiles/pin_lib_for_scarab.dir/gather_scatter_addresses.cc.o
+/usr/bin/ranlib libpin_lib_for_scarab.a
